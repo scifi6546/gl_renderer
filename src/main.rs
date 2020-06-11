@@ -6,6 +6,14 @@ use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
 
 fn main() {
+    #[rustfmt::skip]
+    let mut VERTEX_DATA:Vec<f32> = vec! [
+    -0.5, -0.5,  1.0,
+     0.0,  0.0,  0.0,  
+     0.5,  0.0,  1.0,  
+     0.0,  0.5, -0.5,  
+     0.0,  0.0,  1.0,
+    ];
     let el = EventLoop::new();
     let wb = WindowBuilder::new().with_title("A fantastic window!");
 
@@ -24,12 +32,15 @@ fn main() {
     el.run(move |event, _, control_flow| {
         //println!("{:?}", event);
         //*control_flow = ControlFlow::Wait;
+        VERTEX_DATA[0]+=0.0001;
+        VERTEX_DATA[3]+=0.0001;
+        VERTEX_DATA[6]+=0.0001;
         println!("color: {}",color);
         color+=0.000123;
         if color>1.0{
             color=0.0
         }
-        gl.draw_frame([color, color, color, 1.0]);
+        gl.draw_frame([color, color, color, 1.0],VERTEX_DATA.clone());
                 windowed_context.swap_buffers().unwrap();
         match event {
             Event::LoopDestroyed => return,

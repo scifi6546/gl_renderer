@@ -1,7 +1,11 @@
 use glutin::{self, PossiblyCurrent};
 
 use std::ffi::CStr;
-
+struct Vec3{
+    x:f32,
+    y:f32,
+    z:f32,
+}
 pub mod gl {
     pub use self::Gles2 as Gl;
     include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
@@ -10,6 +14,7 @@ pub mod gl {
 pub struct Gl {
     pub gl: gl::Gl,
     vertexBuffer:u32,
+    indexBuffer:u32,
 }
 
 pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
@@ -25,6 +30,7 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
 
     println!("OpenGL version {}", version);
     let mut vb = 0;
+    let mut indexBuffer = 0;
     unsafe {
         let vs = gl.CreateShader(gl::VERTEX_SHADER);
         gl.ShaderSource(
@@ -51,6 +57,7 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
         gl.UseProgram(program);
 
         gl.GenBuffers(1, &mut vb);
+        gl.GenBuffers(1,&mut indexBuffer);
         gl.BindBuffer(gl::ARRAY_BUFFER, vb);
         
         gl.BufferData(
@@ -92,17 +99,20 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
     }
 
     Gl { gl: gl ,
-        vertexBuffer:vb
+        vertexBuffer:vb,
+        indexBuffer:indexBuffer,
     }
 }
 
 impl Gl {
-    pub fn draw_frame(&self, color: [f32; 4]) {
+    pub fn draw_frame(&self, color: [f32; 4],verticies:Vec<f32>) {
         println!("drawing color: {}",color[0]);
         unsafe {
+            self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertexBuffer);
+            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*3*4) as isize,verticies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
             self.gl.ClearColor(color[0], color[1], color[2], color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
-            self.gl.DrawArrays(gl::TRIANGLES, 0, 3);
+            self.gl.DrawArrays(gl::TRIANGLES, 0, 6);
         }
     }
 }
