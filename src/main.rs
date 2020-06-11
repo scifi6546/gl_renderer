@@ -8,11 +8,13 @@ use glutin::ContextBuilder;
 fn main() {
     #[rustfmt::skip]
     let mut VERTEX_DATA:Vec<f32> = vec! [
-    -0.5, -0.5,  1.0,
-     0.0,  0.0,  0.0,  
-     0.5,  0.0,  1.0,  
-     0.0,  0.5, -0.5,  
-     0.0,  0.0,  1.0,
+     1.0,  0.0,  0.0,
+     0.0,  1.0,  0.0,  
+    -1.0,  0.0,  0.0,  
+     0.0, -1.0,  0.0,  
+    ];
+    let indicies = vec![
+        0,1,2,0,2,3
     ];
     let el = EventLoop::new();
     let wb = WindowBuilder::new().with_title("A fantastic window!");
@@ -40,7 +42,7 @@ fn main() {
         if color>1.0{
             color=0.0
         }
-        gl.draw_frame([color, color, color, 1.0],VERTEX_DATA.clone());
+        gl.draw_frame([color, color, color, 1.0],VERTEX_DATA.clone(),indicies.clone());
                 windowed_context.swap_buffers().unwrap();
         match event {
             Event::LoopDestroyed => return,

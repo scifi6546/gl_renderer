@@ -105,11 +105,13 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
 }
 
 impl Gl {
-    pub fn draw_frame(&self, color: [f32; 4],verticies:Vec<f32>) {
+    pub fn draw_frame(&self, color: [f32; 4],verticies:Vec<f32>,indicies:Vec<u32>) {
         println!("drawing color: {}",color[0]);
         unsafe {
             self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertexBuffer);
             self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*3*4) as isize,verticies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER,self.indexBuffer);
+            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*3*4) as isize,indicies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
             self.gl.ClearColor(color[0], color[1], color[2], color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
             self.gl.DrawArrays(gl::TRIANGLES, 0, 6);
