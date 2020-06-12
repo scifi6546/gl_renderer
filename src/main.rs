@@ -14,7 +14,7 @@ fn main() {
      0.0, -1.0,  0.0,  
     ];
     let indicies = vec![
-        0,1,2,0,2,3
+        0,2,1,0,2,3
     ];
     let el = EventLoop::new();
     let wb = WindowBuilder::new().with_title("A fantastic window!");
@@ -34,9 +34,9 @@ fn main() {
     el.run(move |event, _, control_flow| {
         //println!("{:?}", event);
         //*control_flow = ControlFlow::Wait;
-        VERTEX_DATA[0]+=0.0001;
-        VERTEX_DATA[3]+=0.0001;
-        VERTEX_DATA[6]+=0.0001;
+        //VERTEX_DATA[0]+=0.0001;
+        //VERTEX_DATA[3]+=0.0001;
+        //VERTEX_DATA[6]+=0.0001;
         println!("color: {}",color);
         color+=0.000123;
         if color>1.0{

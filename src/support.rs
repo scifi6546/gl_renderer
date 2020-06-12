@@ -60,13 +60,13 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
         gl.GenBuffers(1,&mut indexBuffer);
         gl.BindBuffer(gl::ARRAY_BUFFER, vb);
         
-        gl.BufferData(
-            gl::ARRAY_BUFFER,
-            (VERTEX_DATA.len() * std::mem::size_of::<f32>())
-                as gl::types::GLsizeiptr,
-            VERTEX_DATA.as_ptr() as *const _,
-            gl::DYNAMIC_DRAW,
-        );
+        //gl.BufferData(
+        //    gl::ARRAY_BUFFER,
+        //    (VERTEX_DATA.len() * std::mem::size_of::<f32>())
+        //        as gl::types::GLsizeiptr,
+        //    VERTEX_DATA.as_ptr() as *const _,
+        //    gl::DYNAMIC_DRAW,
+        //);
 
         if gl.BindVertexArray.is_loaded() {
             let mut vao = std::mem::zeroed();
@@ -109,9 +109,9 @@ impl Gl {
         println!("drawing color: {}",color[0]);
         unsafe {
             self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertexBuffer);
-            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*3*4) as isize,verticies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*4) as isize,verticies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
             self.gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER,self.indexBuffer);
-            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*3*4) as isize,indicies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*4) as isize,indicies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
             self.gl.ClearColor(color[0], color[1], color[2], color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
             self.gl.DrawArrays(gl::TRIANGLES, 0, 6);
@@ -119,27 +119,20 @@ impl Gl {
     }
 }
 
-#[rustfmt::skip]
-static VERTEX_DATA: [f32; 15] = [
-    -0.5, -0.5,  1.0,
-     0.0,  0.0,  0.0,  
-     0.5,  0.0,  1.0,  
-     0.0,  0.5, -0.5,  
-     0.0,  0.0,  1.0,
-];
+
 
 const VS_SRC: &'static [u8] = b"
 #version 100
 precision mediump float;
 
-attribute vec2 position;
-attribute vec3 color;
+attribute vec3 position;
+//attribute vec3 color;
 
 varying vec3 v_color;
 
 void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-    v_color = color;
+    gl_Position = vec4(position, 1.0);
+    v_color = vec3(1.0,0.5,1.0);
 }
 \0";
 
