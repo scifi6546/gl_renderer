@@ -58,7 +58,7 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
 
         gl.GenBuffers(1, &mut vb);
         gl.GenBuffers(1,&mut indexBuffer);
-        gl.BindBuffer(gl::ARRAY_BUFFER, vb);
+        //gl.BindBuffer(gl::ARRAY_BUFFER, vb);
         
         //gl.BufferData(
         //    gl::ARRAY_BUFFER,
@@ -80,10 +80,11 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
             gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
         gl.VertexAttribPointer(
             pos_attrib as gl::types::GLuint,
-            2,
+            3,
             gl::FLOAT,
+            gl::FALSE,
             0,
-            5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
+            //3 * std::mem::size_of::<f32>() as gl::types::GLsizei,
             std::ptr::null(),
         );
         gl.VertexAttribPointer(
@@ -109,12 +110,12 @@ impl Gl {
         println!("drawing color: {}",color[0]);
         unsafe {
             self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertexBuffer);
-            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*4) as isize,verticies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*std::mem::size_of::<f32>()) as isize,verticies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
             self.gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER,self.indexBuffer);
-            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*4) as isize,indicies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*std::mem::size_of::<f32>()) as isize,indicies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
             self.gl.ClearColor(color[0], color[1], color[2], color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
-            self.gl.DrawArrays(gl::TRIANGLES, 0, 6);
+            self.gl.DrawElements(gl::TRIANGLES,6,gl::UNSIGNED_INT,0 as *const std::ffi::c_void);
         }
     }
 }
