@@ -114,7 +114,12 @@ impl Gl {
             self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*4) as isize,indicies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
             self.gl.ClearColor(color[0], color[1], color[2], color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
-            self.gl.DrawArrays(gl::TRIANGLES, 0, 6);
+            self.gl.DrawElements(gl::TRIANGLES, 6,gl::UNSIGNED_INT,0 as *const std::ffi::c_void);
+            let e = self.gl.GetError();
+            if e!=0{
+                println!("error: {}",e);
+            }
+
         }
     }
 }
