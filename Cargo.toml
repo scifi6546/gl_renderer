@@ -11,6 +11,7 @@ glutin = "0.24.1"
 winit = "0.20.0"
 takeable-option = "0.4"
 image = "0.21"
+nalgebra = "0.21.1"
 
 [build-dependencies]
 gl_generator = "0.13"

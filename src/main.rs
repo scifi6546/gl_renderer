@@ -34,7 +34,7 @@ fn main() {
         //VERTEX_DATA[0]+=0.0001;
         //VERTEX_DATA[3]+=0.0001;
         //VERTEX_DATA[6]+=0.0001;
-        println!("color: {}", color);
+ //       println!("color: {}", color);
         color += 0.000123;
         if color > 1.0 {
             color = 0.0

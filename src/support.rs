@@ -13,9 +13,10 @@ pub mod gl {
 
 pub struct Gl {
     pub gl: gl::Gl,
-    vertexBuffer: u32,
-    indexBuffer: u32,
-    vertexAttributeArray: u32,
+    vertex_buffer: u32,
+    element_buffer_object:u32,
+    vertex_attribute_array: u32,
+    shader_program:u32,
 }
 
 pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
@@ -29,103 +30,97 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
     };
 
     println!("OpenGL version {}", version);
-    let mut vb = 0;
-    let mut indexBuffer = 0;
-    let mut vao = 0;
+    let mut vertex_buffer = 0;
+    let mut vertex_attribute_array = 0;
+    let mut element_buffer_object = 0;
+    let mut shader_program = 0;
     unsafe {
-        let vs = gl.CreateShader(gl::VERTEX_SHADER);
-        gl.ShaderSource(
-            vs,
-            1,
-            [VS_SRC.as_ptr() as *const _].as_ptr(),
-            std::ptr::null(),
-        );
-        gl.CompileShader(vs);
+        let vertex_shader = gl.CreateShader(gl::VERTEX_SHADER);
+        gl.ShaderSource(vertex_shader,1,[VS_SRC.as_ptr() as *const _].as_ptr(),std::ptr::null());
+        gl.CompileShader(vertex_shader);
+        {
+            let mut sucess=0;
+            gl.GetShaderiv(vertex_shader,gl::COMPILE_STATUS,&mut sucess as *mut i32);
+            
+            if sucess!=1{
+                println!("compiliation failed!!!");
 
-        let fs = gl.CreateShader(gl::FRAGMENT_SHADER);
-        gl.ShaderSource(
-            fs,
-            1,
-            [FS_SRC.as_ptr() as *const _].as_ptr(),
-            std::ptr::null(),
-        );
-        gl.CompileShader(fs);
+            }
+        }
+        let fragment_shader = gl.CreateShader(gl::FRAGMENT_SHADER);
+        gl.ShaderSource(fragment_shader,1,[FS_SRC.as_ptr() as *const _].as_ptr(),std::ptr::null());
+        gl.CompileShader(fragment_shader);
+        {
+            let mut sucess=1;
+            gl.GetShaderiv(fragment_shader,gl::COMPILE_STATUS,&mut sucess as *mut i32);
+            if sucess!=1{
+                println!("compiliation failed!!!");
 
-        let program = gl.CreateProgram();
-        gl.AttachShader(program, vs);
-        gl.AttachShader(program, fs);
-        gl.LinkProgram(program);
-        gl.UseProgram(program);
+            }
+        }
+        shader_program = gl.CreateProgram();
+        gl.AttachShader(shader_program,vertex_shader);
+        gl.AttachShader(shader_program,fragment_shader);
+        gl.LinkProgram(shader_program);
+        {
+            let mut sucess = 1;
+            gl.GetProgramiv(shader_program,gl::LINK_STATUS,&mut sucess as *mut i32);
+            if sucess!=1{
+                println!("failed to link program!");
 
-        gl.GenBuffers(1, &mut vb);
-        gl.GenBuffers(1, &mut indexBuffer);
+            }
 
-        if gl.BindVertexArray.is_loaded() {
-            gl.GenVertexArrays(1, &mut vao);
-            gl.BindVertexArray(vao);
         }
 
-        let pos_attrib = gl.GetAttribLocation(program, b"position\0".as_ptr() as *const _);
-        let color_attrib = gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
-        gl.VertexAttribPointer(
-            pos_attrib as gl::types::GLuint,
-            3,
-            gl::FLOAT,
-            gl::FALSE,
-            //0,
-            3 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-            std::ptr::null(),
-        );
-        //gl.VertexAttribPointer(
-        //    color_attrib as gl::types::GLuint,
-        //    3,
-        //    gl::FLOAT,
-        //    0,
-        //    5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-        //    (2 * std::mem::size_of::<f32>()) as *const () as *const _,
-        //);
-        gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
-        gl.EnableVertexAttribArray(color_attrib as gl::types::GLuint);
+        gl.DeleteShader(vertex_shader);
+        gl.DeleteShader(fragment_shader);
+
+        gl.GenVertexArrays(1,&mut vertex_attribute_array);
+        gl.GenBuffers(1,&mut vertex_buffer);
+        gl.GenBuffers(1,&mut element_buffer_object);
+
+        gl.BindVertexArray(vertex_attribute_array);
+
+        
+        gl.BindVertexArray(0);
     }
 
     Gl {
         gl: gl,
-        vertexBuffer: vb,
-        indexBuffer: indexBuffer,
-        vertexAttributeArray: vao
+        vertex_buffer: vertex_buffer,
+        element_buffer_object: element_buffer_object,
+        vertex_attribute_array: vertex_attribute_array,
+        shader_program:shader_program,
     }
 }
 
 impl Gl {
     pub fn draw_frame(&self, color: [f32; 4], verticies: Vec<f32>, indicies: Vec<u32>) {
-        println!("drawing color: {}", color[0]);
+       // println!("drawing color: {}", color[0]);
         unsafe {
-            self.gl.BindBuffer(gl::ARRAY_BUFFER, self.vertexBuffer);
-            self.gl.BufferData(
-                gl::ARRAY_BUFFER,
-                (verticies.len() * std::mem::size_of::<f32>()) as isize,
-                verticies.as_ptr() as *mut std::ffi::c_void,
-                gl::DYNAMIC_DRAW,
-            );
-            self.gl
-                .BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.indexBuffer);
-            self.gl.BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (indicies.len() * std::mem::size_of::<u32>()) as isize,
-                indicies.as_ptr() as *mut std::ffi::c_void,
-                gl::DYNAMIC_DRAW,
-            );
-            self.gl.ClearColor(color[0], color[1], color[2], color[3]);
+            self.gl.ClearColor(color[0],color[1],color[2],color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
+            self.gl.UseProgram(self.shader_program);
+            self.gl.BindVertexArray(self.vertex_attribute_array);
+            //binding data
+            self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertex_buffer);
+            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*std::mem::size_of::<f32>()) as isize,verticies.as_ptr() as *const std::ffi::c_void,gl::DYNAMIC_DRAW);
 
-            let addr: *const u32 = &self.indexBuffer;
-            self.gl.DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, 0 
-                                 as *const std::ffi::c_void);
-            println!("index buffer: {}", self.indexBuffer);
+            self.gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER,self.element_buffer_object);
+            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*std::mem::size_of::<u32>()) as isize,indicies.as_ptr() as *const std::ffi::c_void,gl::DYNAMIC_DRAW);
+
+            self.gl.VertexAttribPointer(0,3,gl::FLOAT,gl::FALSE,(3*std::mem::size_of::<f32>()) as i32,0 as *const std::ffi::c_void);
+            self.gl.EnableVertexAttribArray(0);
+            self.gl.DrawElements(gl::TRIANGLES,indicies.len() as i32,gl::UNSIGNED_INT,0 as *const _);
+            self.gl.BindBuffer(gl::ARRAY_BUFFER,0);
+            self.gl.BindVertexArray(0);
             let e = self.gl.GetError();
-            if e != 0 {
-                println!("error: {}", e);
+            if e!=0{
+                println!("gl error: {}",e);
+
             }
+                
+            
         }
     }
 }
