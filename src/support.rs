@@ -1,10 +1,10 @@
 use glutin::{self, PossiblyCurrent};
 
 use std::ffi::CStr;
-struct Vec3{
-    x:f32,
-    y:f32,
-    z:f32,
+struct Vec3 {
+    x: f32,
+    y: f32,
+    z: f32,
 }
 pub mod gl {
     pub use self::Gles2 as Gl;
@@ -13,13 +13,13 @@ pub mod gl {
 
 pub struct Gl {
     pub gl: gl::Gl,
-    vertexBuffer:u32,
-    indexBuffer:u32,
+    vertexBuffer: u32,
+    indexBuffer: u32,
+    vertexAttributeArray: u32,
 }
 
 pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
-    let gl =
-        gl::Gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _);
+    let gl = gl::Gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _);
 
     let version = unsafe {
         let data = CStr::from_ptr(gl.GetString(gl::VERSION) as *const _)
@@ -31,6 +31,7 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
     println!("OpenGL version {}", version);
     let mut vb = 0;
     let mut indexBuffer = 0;
+    let mut vao = 0;
     unsafe {
         let vs = gl.CreateShader(gl::VERTEX_SHADER);
         gl.ShaderSource(
@@ -57,74 +58,77 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
         gl.UseProgram(program);
 
         gl.GenBuffers(1, &mut vb);
-        gl.GenBuffers(1,&mut indexBuffer);
-        //gl.BindBuffer(gl::ARRAY_BUFFER, vb);
-        
-        //gl.BufferData(
-        //    gl::ARRAY_BUFFER,
-        //    (VERTEX_DATA.len() * std::mem::size_of::<f32>())
-        //        as gl::types::GLsizeiptr,
-        //    VERTEX_DATA.as_ptr() as *const _,
-        //    gl::DYNAMIC_DRAW,
-        //);
+        gl.GenBuffers(1, &mut indexBuffer);
 
         if gl.BindVertexArray.is_loaded() {
-            let mut vao = std::mem::zeroed();
             gl.GenVertexArrays(1, &mut vao);
             gl.BindVertexArray(vao);
         }
 
-        let pos_attrib =
-            gl.GetAttribLocation(program, b"position\0".as_ptr() as *const _);
-        let color_attrib =
-            gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
+        let pos_attrib = gl.GetAttribLocation(program, b"position\0".as_ptr() as *const _);
+        let color_attrib = gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
         gl.VertexAttribPointer(
             pos_attrib as gl::types::GLuint,
             3,
             gl::FLOAT,
             gl::FALSE,
-            0,
-            //3 * std::mem::size_of::<f32>() as gl::types::GLsizei,
+            //0,
+            3 * std::mem::size_of::<f32>() as gl::types::GLsizei,
             std::ptr::null(),
         );
-        gl.VertexAttribPointer(
-            color_attrib as gl::types::GLuint,
-            3,
-            gl::FLOAT,
-            0,
-            5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-            (2 * std::mem::size_of::<f32>()) as *const () as *const _,
-        );
+        //gl.VertexAttribPointer(
+        //    color_attrib as gl::types::GLuint,
+        //    3,
+        //    gl::FLOAT,
+        //    0,
+        //    5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
+        //    (2 * std::mem::size_of::<f32>()) as *const () as *const _,
+        //);
         gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
         gl.EnableVertexAttribArray(color_attrib as gl::types::GLuint);
     }
 
-    Gl { gl: gl ,
-        vertexBuffer:vb,
-        indexBuffer:indexBuffer,
+    Gl {
+        gl: gl,
+        vertexBuffer: vb,
+        indexBuffer: indexBuffer,
+        vertexAttributeArray: vao
     }
 }
 
 impl Gl {
-    pub fn draw_frame(&self, color: [f32; 4],verticies:Vec<f32>,indicies:Vec<u32>) {
-        println!("drawing color: {}",color[0]);
+    pub fn draw_frame(&self, color: [f32; 4], verticies: Vec<f32>, indicies: Vec<u32>) {
+        println!("drawing color: {}", color[0]);
         unsafe {
-            self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertexBuffer);
-            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*std::mem::size_of::<f32>()) as isize,verticies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
-            self.gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER,self.indexBuffer);
-            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*std::mem::size_of::<f32>()) as isize,indicies.as_ptr() as *mut std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BindBuffer(gl::ARRAY_BUFFER, self.vertexBuffer);
+            self.gl.BufferData(
+                gl::ARRAY_BUFFER,
+                (verticies.len() * std::mem::size_of::<f32>()) as isize,
+                verticies.as_ptr() as *mut std::ffi::c_void,
+                gl::DYNAMIC_DRAW,
+            );
+            self.gl
+                .BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.indexBuffer);
+            self.gl.BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (indicies.len() * std::mem::size_of::<u32>()) as isize,
+                indicies.as_ptr() as *mut std::ffi::c_void,
+                gl::DYNAMIC_DRAW,
+            );
             self.gl.ClearColor(color[0], color[1], color[2], color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
-            self.gl.DrawElements(gl::TRIANGLES,6,gl::UNSIGNED_INT,0 as *const std::ffi::c_void);
+
+            let addr: *const u32 = &self.indexBuffer;
+            self.gl.DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, 0 
+                                 as *const std::ffi::c_void);
+            println!("index buffer: {}", self.indexBuffer);
             let e = self.gl.GetError();
-            if e!=0{
-                println!("error: {}",e);
+            if e != 0 {
+                println!("error: {}", e);
             }
         }
     }
 }
-
-
 
 const VS_SRC: &'static [u8] = b"
 #version 100
@@ -152,15 +156,13 @@ void main() {
 }
 \0";
 
-pub use self::context_tracker::{
-    ContextCurrentWrapper, ContextId, ContextTracker, ContextWrapper,
-};
+pub use self::context_tracker::{ContextCurrentWrapper, ContextId, ContextTracker, ContextWrapper};
 
 #[allow(dead_code)] // Not used by all examples
 mod context_tracker {
     use glutin::{
-        self, Context, ContextCurrentState, ContextError, NotCurrent,
-        PossiblyCurrent, WindowedContext,
+        self, Context, ContextCurrentState, ContextError, NotCurrent, PossiblyCurrent,
+        WindowedContext,
     };
     use takeable_option::Takeable;
 
@@ -190,29 +192,20 @@ mod context_tracker {
             fw: FW,
         ) -> Result<ContextWrapper<T2>, (Self, ContextError)>
         where
-            FH: FnOnce(
-                Context<T>,
-            )
-                -> Result<Context<T2>, (Context<T>, ContextError)>,
+            FH: FnOnce(Context<T>) -> Result<Context<T2>, (Context<T>, ContextError)>,
             FW: FnOnce(
                 WindowedContext<T>,
-            ) -> Result<
-                WindowedContext<T2>,
-                (WindowedContext<T>, ContextError),
-            >,
+            )
+                -> Result<WindowedContext<T2>, (WindowedContext<T>, ContextError)>,
         {
             match self {
                 ContextWrapper::Headless(ctx) => match fh(ctx) {
                     Ok(ctx) => Ok(ContextWrapper::Headless(ctx)),
-                    Err((ctx, err)) => {
-                        Err((ContextWrapper::Headless(ctx), err))
-                    }
+                    Err((ctx, err)) => Err((ContextWrapper::Headless(ctx), err)),
                 },
                 ContextWrapper::Windowed(ctx) => match fw(ctx) {
                     Ok(ctx) => Ok(ContextWrapper::Windowed(ctx)),
-                    Err((ctx, err)) => {
-                        Err((ContextWrapper::Windowed(ctx), err))
-                    }
+                    Err((ctx, err)) => Err((ContextWrapper::Windowed(ctx), err)),
                 },
             }
         }
@@ -237,9 +230,7 @@ mod context_tracker {
                 ret @ ContextCurrentWrapper::NotCurrent(_) => Ok(ret),
                 ContextCurrentWrapper::PossiblyCurrent(ctx) => match f(ctx) {
                     Ok(ctx) => Ok(ContextCurrentWrapper::NotCurrent(ctx)),
-                    Err((ctx, err)) => {
-                        Err((ContextCurrentWrapper::PossiblyCurrent(ctx), err))
-                    }
+                    Err((ctx, err)) => Err((ContextCurrentWrapper::PossiblyCurrent(ctx), err)),
                 },
             }
         }
@@ -257,9 +248,7 @@ mod context_tracker {
                 ret @ ContextCurrentWrapper::PossiblyCurrent(_) => Ok(ret),
                 ContextCurrentWrapper::NotCurrent(ctx) => match f(ctx) {
                     Ok(ctx) => Ok(ContextCurrentWrapper::PossiblyCurrent(ctx)),
-                    Err((ctx, err)) => {
-                        Err((ContextCurrentWrapper::NotCurrent(ctx), err))
-                    }
+                    Err((ctx, err)) => Err((ContextCurrentWrapper::NotCurrent(ctx), err)),
                 },
             }
         }
@@ -315,10 +304,8 @@ mod context_tracker {
         where
             F: FnOnce(
                 ContextCurrentWrapper,
-            ) -> Result<
-                ContextCurrentWrapper,
-                (ContextCurrentWrapper, ContextError),
-            >,
+            )
+                -> Result<ContextCurrentWrapper, (ContextCurrentWrapper, ContextError)>,
         {
             let this_index = self
                 .others
@@ -342,8 +329,7 @@ mod context_tracker {
         pub fn get_current(
             &mut self,
             id: ContextId,
-        ) -> Result<&mut ContextWrapper<PossiblyCurrent>, ContextError>
-        {
+        ) -> Result<&mut ContextWrapper<PossiblyCurrent>, ContextError> {
             unsafe {
                 let this_index = self
                     .others
@@ -354,10 +340,7 @@ mod context_tracker {
 
                     if let Err(err) = self.modify(id, |ctx| {
                         ctx.map_not(|ctx| {
-                            ctx.map(
-                                |ctx| ctx.make_current(),
-                                |ctx| ctx.make_current(),
-                            )
+                            ctx.map(|ctx| ctx.make_current(), |ctx| ctx.make_current())
                         })
                     }) {
                         // Oh noes, something went wrong
@@ -371,19 +354,22 @@ mod context_tracker {
                                     )
                                 })
                             }) {
-                                panic!("Could not `make_current` nor `make_not_current`, {:?}, {:?}", err, err2);
+                                panic!(
+                                    "Could not `make_current` nor `make_not_current`, {:?}, {:?}",
+                                    err, err2
+                                );
                             }
                         }
 
                         if let Err(err2) = self.modify(id, |ctx| {
                             ctx.map_possibly(|ctx| {
-                                ctx.map(
-                                    |ctx| ctx.make_not_current(),
-                                    |ctx| ctx.make_not_current(),
-                                )
+                                ctx.map(|ctx| ctx.make_not_current(), |ctx| ctx.make_not_current())
                             })
                         }) {
-                            panic!("Could not `make_current` nor `make_not_current`, {:?}, {:?}", err, err2);
+                            panic!(
+                                "Could not `make_current` nor `make_not_current`, {:?}, {:?}",
+                                err, err2
+                            );
                         }
 
                         return Err(err);
@@ -405,9 +391,7 @@ mod context_tracker {
                 }
 
                 match *self.others[this_index].1 {
-                    ContextCurrentWrapper::PossiblyCurrent(ref mut ctx) => {
-                        Ok(ctx)
-                    }
+                    ContextCurrentWrapper::PossiblyCurrent(ref mut ctx) => Ok(ctx),
                     ContextCurrentWrapper::NotCurrent(_) => panic!(),
                 }
             }
