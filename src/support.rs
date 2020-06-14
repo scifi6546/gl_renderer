@@ -1,5 +1,6 @@
 use glutin::{self, PossiblyCurrent};
 use nalgebra::{Vector3,Matrix4};
+use std::ffi::CString;
 
 use std::ffi::CStr;
 struct Vec3 {
@@ -105,6 +106,13 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
 }
 
 impl Gl {
+    unsafe fn getError(&self){
+        let e = self.gl.GetError();
+        if e!=0{
+            println!("gl error: {}",e);
+
+        }
+    }
     pub fn draw_frame(&self, color: [f32; 4], verticies: Vec<f32>, indicies: Vec<u32>) {
        // println!("drawing color: {}", color[0]);
         unsafe {
@@ -112,27 +120,29 @@ impl Gl {
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
             self.gl.UseProgram(self.shader_program);
             self.get_active_uniforms();
-
+            self.getError();
 
             let m = nalgebra::one::<Matrix4<f32>>();
             println!("{}",m);
             let m_ptr = m.as_slice().as_ptr();
-            
-            let model_location = self.gl.GetUniformLocation(self.shader_program,"model".as_ptr() as *const i8);
+            println!("shader program: {}",self.shader_program);
+            let model_location = self.gl.GetUniformLocation(self.shader_program,CString::new("model").expect("failed??").as_ptr() as *const i8);
             println!("model location {}",model_location);
             self.gl.UniformMatrix4fv(model_location,1,gl::FALSE,m_ptr);
 
 
             let m2 = nalgebra::one::<Matrix4<f32>>();
 
-            let view_location = self.gl.GetUniformLocation(self.shader_program,"view".as_ptr() as *const i8);
+            let view_location = self.gl.GetUniformLocation(self.shader_program,CString::new("view").expect("failed??").as_ptr() as *const i8);
+            println!("view location {}",view_location);
             self.gl.UniformMatrix4fv(view_location,1,gl::FALSE,m2.as_slice().as_ptr());
 
             let m3 = nalgebra::one::<Matrix4<f32>>();
-            let position_location = self.gl.GetUniformLocation(self.shader_program,"position_mat".as_ptr() as *const i8);
+            let position_location = self.gl.GetUniformLocation(self.shader_program,CString::new("position_mat").expect("failed??").as_ptr() as *const i8);
+            println!("position location: {}",position_location);
             self.gl.UniformMatrix4fv(position_location,1,gl::FALSE,m3.as_slice().as_ptr());
             println!("{}",m);
-
+            self.getError();
 
 
             self.gl.BindVertexArray(self.vertex_attribute_array);
@@ -148,11 +158,7 @@ impl Gl {
             self.gl.DrawElements(gl::TRIANGLES,indicies.len() as i32,gl::UNSIGNED_INT,0 as *const _);
             self.gl.BindBuffer(gl::ARRAY_BUFFER,0);
             self.gl.BindVertexArray(0);
-            let e = self.gl.GetError();
-            if e!=0{
-                println!("gl error: {}",e);
 
-            }
                 
             
         }
@@ -162,14 +168,17 @@ impl Gl {
         self.gl.GetProgramiv(self.shader_program,gl::ACTIVE_UNIFORMS,&mut count);
         println!("num active uniforms: {}",count);
         for i in 0..count{
-            let mut name_buff = [0;512];
-            let mut type_buff = [0;512];
+            let mut name_buff:Vec<u8> = vec![0;512];
+            let mut type_buff = vec![0;512];
             let mut len = 0;
             let mut size = 0;
-            self.gl.GetActiveUniform(self.shader_program,i as u32,511,&mut len,&mut size,type_buff.as_mut_ptr(),name_buff.as_mut_ptr());
-            let name_str = std::string::String::from_raw_parts(name_buff.as_mut_ptr() as *mut u8,512,512);
+            self.gl.GetActiveUniform(self.shader_program,i as u32,511,&mut len,&mut size,type_buff.as_mut_ptr(),name_buff.as_mut_ptr() as *mut i8);
+            let name_str = std::string::String::from_utf8(name_buff.clone()).ok().unwrap();
          //   let type_str = std::string::String::from_raw_parts(type_buff.as_mut_ptr() as *mut u8,512,512);
             println!("name: {} ",name_str);
+            println!("{}",name_buff.iter().filter(|x| x!=&&0).map(|x| format!("{:#x}, ",x)).fold("".to_string(),|s,c| s+&c));
+
+            //println!("name raw: {:?}",name_buff);
 
         }
 
@@ -196,6 +205,10 @@ void main() {
 const FS_SRC: &'static [u8] = b"
 #version 330 core
 precision mediump float;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 position_mat;
 
 varying vec3 v_color;
 
