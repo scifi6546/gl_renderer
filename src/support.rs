@@ -1,4 +1,5 @@
 use glutin::{self, PossiblyCurrent};
+use nalgebra::{Vector3,Matrix4};
 
 use std::ffi::CStr;
 struct Vec3 {
@@ -43,7 +44,12 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
             gl.GetShaderiv(vertex_shader,gl::COMPILE_STATUS,&mut sucess as *mut i32);
             
             if sucess!=1{
-                println!("compiliation failed!!!");
+                let mut error_log = [0;512];
+                let mut len = 0;
+                gl.GetShaderInfoLog(vertex_shader,512,&mut len,error_log.as_mut_ptr());
+                let error_str = String::from_raw_parts(error_log.as_mut_ptr() as *mut u8,len as usize,512);
+                println!("vertex shader compiliation failed!!!");
+                println!("{}",error_str);
 
             }
         }
@@ -54,7 +60,7 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
             let mut sucess=1;
             gl.GetShaderiv(fragment_shader,gl::COMPILE_STATUS,&mut sucess as *mut i32);
             if sucess!=1{
-                println!("compiliation failed!!!");
+                println!("fragment shader compiliation failed!!!");
 
             }
         }
@@ -81,6 +87,10 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
 
         gl.BindVertexArray(vertex_attribute_array);
 
+
+
+        
+
         
         gl.BindVertexArray(0);
     }
@@ -101,6 +111,30 @@ impl Gl {
             self.gl.ClearColor(color[0],color[1],color[2],color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
             self.gl.UseProgram(self.shader_program);
+            self.get_active_uniforms();
+
+
+            let m = nalgebra::one::<Matrix4<f32>>();
+            println!("{}",m);
+            let m_ptr = m.as_slice().as_ptr();
+            
+            let model_location = self.gl.GetUniformLocation(self.shader_program,"model".as_ptr() as *const i8);
+            println!("model location {}",model_location);
+            self.gl.UniformMatrix4fv(model_location,1,gl::FALSE,m_ptr);
+
+
+            let m2 = nalgebra::one::<Matrix4<f32>>();
+
+            let view_location = self.gl.GetUniformLocation(self.shader_program,"view".as_ptr() as *const i8);
+            self.gl.UniformMatrix4fv(view_location,1,gl::FALSE,m2.as_slice().as_ptr());
+
+            let m3 = nalgebra::one::<Matrix4<f32>>();
+            let position_location = self.gl.GetUniformLocation(self.shader_program,"position_mat".as_ptr() as *const i8);
+            self.gl.UniformMatrix4fv(position_location,1,gl::FALSE,m3.as_slice().as_ptr());
+            println!("{}",m);
+
+
+
             self.gl.BindVertexArray(self.vertex_attribute_array);
             //binding data
             self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertex_buffer);
@@ -123,25 +157,44 @@ impl Gl {
             
         }
     }
+    unsafe fn get_active_uniforms(&self){
+        let mut count = 0;
+        self.gl.GetProgramiv(self.shader_program,gl::ACTIVE_UNIFORMS,&mut count);
+        println!("num active uniforms: {}",count);
+        for i in 0..count{
+            let mut name_buff = [0;512];
+            let mut type_buff = [0;512];
+            let mut len = 0;
+            let mut size = 0;
+            self.gl.GetActiveUniform(self.shader_program,i as u32,511,&mut len,&mut size,type_buff.as_mut_ptr(),name_buff.as_mut_ptr());
+            let name_str = std::string::String::from_raw_parts(name_buff.as_mut_ptr() as *mut u8,512,512);
+         //   let type_str = std::string::String::from_raw_parts(type_buff.as_mut_ptr() as *mut u8,512,512);
+            println!("name: {} ",name_str);
+
+        }
+
+    }
 }
 
 const VS_SRC: &'static [u8] = b"
-#version 100
+#version 330 core
 precision mediump float;
 
 attribute vec3 position;
-//attribute vec3 color;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 position_mat;
 
 varying vec3 v_color;
 
 void main() {
-    gl_Position = vec4(position, 1.0);
+    gl_Position = model*view*position_mat*vec4(position, 1.0);
     v_color = vec3(1.0,0.5,1.0);
 }
 \0";
 
 const FS_SRC: &'static [u8] = b"
-#version 100
+#version 330 core
 precision mediump float;
 
 varying vec3 v_color;
