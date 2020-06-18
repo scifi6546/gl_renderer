@@ -111,7 +111,7 @@ impl Gl {
 
         }
     }
-    pub fn draw_frame(&self, color: [f32; 4], model: Model) {
+    pub fn draw_frame(&self, color: [f32; 4], model: Vec<Model>) {
        // println!("drawing color: {}", color[0]);
         unsafe {
             self.gl.ClearColor(color[0],color[1],color[2],color[3]);
@@ -120,6 +120,12 @@ impl Gl {
             self.get_active_uniforms();
             self.get_error();
 
+            for m in model.iter(){
+                self.draw_model(m);
+            }
+        }
+    }
+    unsafe fn draw_model(&self,model: &Model){
             let m = nalgebra::one::<Matrix4<f32>>();
             println!("{}",m);
             let m_ptr = m.as_slice().as_ptr();
@@ -157,9 +163,6 @@ impl Gl {
             self.gl.BindBuffer(gl::ARRAY_BUFFER,0);
             self.gl.BindVertexArray(0);
 
-                
-            
-        }
     }
     unsafe fn get_active_uniforms(&self){
         let mut count = 0;

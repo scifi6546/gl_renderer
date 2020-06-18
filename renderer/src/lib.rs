@@ -5,6 +5,9 @@ use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
+pub trait Renderable{
+    fn render(&mut self)->Vec<Model>;
+}
 pub struct GraphicsState{
     gl:support::Gl,
     event_loop:EventLoop<()>,
@@ -30,11 +33,12 @@ pub fn init()->GraphicsState {
 
     }
 }
-pub fn run(gl:GraphicsState){
-    _run(gl.gl,gl.event_loop,gl.window_context);
+pub fn run<State:Renderable+'static>(state:fn()->State,gl:GraphicsState){
+    _run(state,gl.gl,gl.event_loop,gl.window_context);
 
 }
-fn _run(
+fn _run<State:Renderable+'static>(
+    state_factory:fn()->State, 
     gl:support::Gl,
     event_loop:EventLoop<()>,
     window_context:glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>){
@@ -46,8 +50,10 @@ fn _run(
     -1.0,  0.0,  0.0,  
      0.0, -1.0,  0.0,  
     ];
+    let mut state = state_factory();
     event_loop.run(move |event, _, control_flow| {
-    let model = Model{
+        let draw = state.render();
+    let model = vec![Model{
         verticies:vec![
             Vector3::new(1.0,0.0,0.0),
             Vector3::new(0.0,1.0,0.0),
@@ -55,13 +61,7 @@ fn _run(
             Vector3::new(0.0,-1.0,0.0),
         ],
         indicies: vec![0,2,1,0,2,3],
-    };
-        //println!("{:?}", event);
-        //*control_flow = ControlFlow::Wait;
-        //VERTEX_DATA[0]+=0.0001;
-        //VERTEX_DATA[3]+=0.0001;
-        //VERTEX_DATA[6]+=0.0001;
- //       println!("color: {}", color);
+    }];
         color += 0.000123;
         if color > 1.0 {
             color = 0.0
