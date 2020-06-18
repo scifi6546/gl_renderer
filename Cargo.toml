@@ -10,3 +10,4 @@ edition = "2018"
 gl_renderer={path="renderer"}
 ecs={path="ecs"}
 nalgebra = "0.21.1"
+rand="0.7.3"

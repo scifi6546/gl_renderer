@@ -1,8 +1,30 @@
 use gl_renderer::{init, run, Model, Renderable};
 use nalgebra::Vector3;
-struct State {}
+#[macro_use]
+extern crate ecs;
+mod Planets{
+    use gl_renderer::Model;
+    use nalgebra::Vector3;
+    create_entity!(mass:f64,position:Vector3<f64>,velocity:Vector3<f64>,draw:Model); 
+}
+struct State {
+    planet_system:Planets::EntityManager,
+}
+impl State{
+    pub fn new()->Self{
+        let mut s = State{
+            planet_system:Planets::EntityManager::new(),
+        };
+        s.planet_system.new_entity(Planets::Entity::new(||{1.0},||{Vector3::new(0.0,0.0,0.0)},||{Vector3::new(0.0,0.0,0.0)},||Model{verticies:vec![],indicies:vec![]},vec![]));
+        return s;
+
+    }
+
+}
+
 impl Renderable for State {
     fn render(&mut self) -> Vec<Model> {
+        self.planet_system.process();
         vec![Model {
             verticies: vec![
                 Vector3::new(1.0, 0.0, 0.0),
@@ -16,5 +38,5 @@ impl Renderable for State {
 }
 fn main() {
     println!("Hello, world!");
-    run(|| State {}, init());
+    run(|| State::new(), init());
 }
