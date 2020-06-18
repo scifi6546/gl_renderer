@@ -1,4 +1,6 @@
 mod support;
+use nalgebra::Vector3;
+pub use support::Model;
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
@@ -44,8 +46,16 @@ fn _run(
     -1.0,  0.0,  0.0,  
      0.0, -1.0,  0.0,  
     ];
-    let indicies = vec![0, 2, 1, 0, 2, 3];
     event_loop.run(move |event, _, control_flow| {
+    let model = Model{
+        verticies:vec![
+            Vector3::new(1.0,0.0,0.0),
+            Vector3::new(0.0,1.0,0.0),
+            Vector3::new(-1.0,0.0,0.0),
+            Vector3::new(0.0,-1.0,0.0),
+        ],
+        indicies: vec![0,2,1,0,2,3],
+    };
         //println!("{:?}", event);
         //*control_flow = ControlFlow::Wait;
         //VERTEX_DATA[0]+=0.0001;
@@ -58,8 +68,7 @@ fn _run(
         }
         gl.draw_frame(
             [color, color, color, 1.0],
-            VERTEX_DATA.clone(),
-            indicies.clone(),
+            model
         );
         window_context.swap_buffers().unwrap();
         match event {

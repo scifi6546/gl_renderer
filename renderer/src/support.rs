@@ -111,7 +111,7 @@ impl Gl {
 
         }
     }
-    pub fn draw_frame(&self, color: [f32; 4], verticies: Vec<f32>, indicies: Vec<u32>) {
+    pub fn draw_frame(&self, color: [f32; 4], model: Model) {
        // println!("drawing color: {}", color[0]);
         unsafe {
             self.gl.ClearColor(color[0],color[1],color[2],color[3]);
@@ -146,14 +146,14 @@ impl Gl {
             self.gl.BindVertexArray(self.vertex_attribute_array);
             //binding data
             self.gl.BindBuffer(gl::ARRAY_BUFFER,self.vertex_buffer);
-            self.gl.BufferData(gl::ARRAY_BUFFER,(verticies.len()*std::mem::size_of::<f32>()) as isize,verticies.as_ptr() as *const std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BufferData(gl::ARRAY_BUFFER,(model.verticies.len()*3*std::mem::size_of::<f32>()) as isize,model.verticies.as_ptr() as *const std::ffi::c_void,gl::DYNAMIC_DRAW);
 
             self.gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER,self.element_buffer_object);
-            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(indicies.len()*std::mem::size_of::<u32>()) as isize,indicies.as_ptr() as *const std::ffi::c_void,gl::DYNAMIC_DRAW);
+            self.gl.BufferData(gl::ELEMENT_ARRAY_BUFFER,(model.indicies.len()*std::mem::size_of::<u32>()) as isize,model.indicies.as_ptr() as *const std::ffi::c_void,gl::DYNAMIC_DRAW);
 
             self.gl.VertexAttribPointer(0,3,gl::FLOAT,gl::FALSE,(3*std::mem::size_of::<f32>()) as i32,0 as *const std::ffi::c_void);
             self.gl.EnableVertexAttribArray(0);
-            self.gl.DrawElements(gl::TRIANGLES,indicies.len() as i32,gl::UNSIGNED_INT,0 as *const _);
+            self.gl.DrawElements(gl::TRIANGLES,model.indicies.len() as i32,gl::UNSIGNED_INT,0 as *const _);
             self.gl.BindBuffer(gl::ARRAY_BUFFER,0);
             self.gl.BindVertexArray(0);
 
