@@ -3,30 +3,49 @@ use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
-pub fn init() {
-    #[rustfmt::skip]
-    let mut VERTEX_DATA:Vec<f32> = vec! [
-     1.0,  0.0,  0.0,
-     0.0,  1.0,  0.0,  
-    -1.0,  0.0,  0.0,  
-     0.0, -1.0,  0.0,  
-    ];
-    let indicies = vec![0, 2, 1, 0, 2, 3];
+pub struct GraphicsState{
+    gl:support::Gl,
+    event_loop:EventLoop<()>,
+    window_context:glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>
+}
+pub fn init()->GraphicsState {
     let el = EventLoop::new();
     let wb = WindowBuilder::new().with_title("A fantastic window!");
 
     let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
 
     let windowed_context = unsafe { windowed_context.make_current().unwrap() };
-
     println!(
         "Pixel format of the window's GL context: {:?}",
         windowed_context.get_pixel_format()
     );
 
     let gl = support::load(&windowed_context.context());
+    return GraphicsState{
+        gl:gl,
+        event_loop:el,
+        window_context:windowed_context,
+
+    }
+}
+pub fn run(gl:GraphicsState){
+    _run(gl.gl,gl.event_loop,gl.window_context);
+
+}
+fn _run(
+    gl:support::Gl,
+    event_loop:EventLoop<()>,
+    window_context:glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>){
     let mut color = 0.0;
-    el.run(move |event, _, control_flow| {
+    #[rustfmt::skip]
+    let VERTEX_DATA:Vec<f32> = vec! [
+     1.0,  0.0,  0.0,
+     0.0,  1.0,  0.0,  
+    -1.0,  0.0,  0.0,  
+     0.0, -1.0,  0.0,  
+    ];
+    let indicies = vec![0, 2, 1, 0, 2, 3];
+    event_loop.run(move |event, _, control_flow| {
         //println!("{:?}", event);
         //*control_flow = ControlFlow::Wait;
         //VERTEX_DATA[0]+=0.0001;
@@ -42,11 +61,11 @@ pub fn init() {
             VERTEX_DATA.clone(),
             indicies.clone(),
         );
-        windowed_context.swap_buffers().unwrap();
+        window_context.swap_buffers().unwrap();
         match event {
             Event::LoopDestroyed => return,
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::Resized(physical_size) => windowed_context.resize(physical_size),
+                WindowEvent::Resized(physical_size) => window_context.resize(physical_size),
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 _ => (),
             },

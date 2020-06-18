@@ -1,13 +1,10 @@
+mod model;
+pub use model::Model;
 use glutin::{self, PossiblyCurrent};
 use nalgebra::{Vector3,Matrix4};
 use std::ffi::CString;
 
 use std::ffi::CStr;
-struct Vec3 {
-    x: f32,
-    y: f32,
-    z: f32,
-}
 pub mod gl {
     pub use self::Gles2 as Gl;
     include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
@@ -35,6 +32,7 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
     let mut vertex_buffer = 0;
     let mut vertex_attribute_array = 0;
     let mut element_buffer_object = 0;
+    #[allow(unused_assignments)]
     let mut shader_program = 0;
     unsafe {
         let vertex_shader = gl.CreateShader(gl::VERTEX_SHADER);
@@ -106,7 +104,7 @@ pub fn load(gl_context: &glutin::Context<PossiblyCurrent>) -> Gl {
 }
 
 impl Gl {
-    unsafe fn getError(&self){
+    unsafe fn get_error(&self){
         let e = self.gl.GetError();
         if e!=0{
             println!("gl error: {}",e);
@@ -120,7 +118,7 @@ impl Gl {
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
             self.gl.UseProgram(self.shader_program);
             self.get_active_uniforms();
-            self.getError();
+            self.get_error();
 
             let m = nalgebra::one::<Matrix4<f32>>();
             println!("{}",m);
@@ -142,7 +140,7 @@ impl Gl {
             println!("position location: {}",position_location);
             self.gl.UniformMatrix4fv(position_location,1,gl::FALSE,m3.as_slice().as_ptr());
             println!("{}",m);
-            self.getError();
+            self.get_error();
 
 
             self.gl.BindVertexArray(self.vertex_attribute_array);

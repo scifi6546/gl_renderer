@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 gl_renderer={path="renderer"}
+ecs={path="ecs"}
