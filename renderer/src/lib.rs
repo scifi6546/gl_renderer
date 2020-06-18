@@ -1,5 +1,4 @@
 mod support;
-use nalgebra::Vector3;
 pub use support::Model;
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
@@ -44,31 +43,16 @@ fn _run<State:Renderable+'static>(
     window_context:glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>){
     let mut color = 0.0;
     #[rustfmt::skip]
-    let VERTEX_DATA:Vec<f32> = vec! [
-     1.0,  0.0,  0.0,
-     0.0,  1.0,  0.0,  
-    -1.0,  0.0,  0.0,  
-     0.0, -1.0,  0.0,  
-    ];
     let mut state = state_factory();
     event_loop.run(move |event, _, control_flow| {
-        let draw = state.render();
-    let model = vec![Model{
-        verticies:vec![
-            Vector3::new(1.0,0.0,0.0),
-            Vector3::new(0.0,1.0,0.0),
-            Vector3::new(-1.0,0.0,0.0),
-            Vector3::new(0.0,-1.0,0.0),
-        ],
-        indicies: vec![0,2,1,0,2,3],
-    }];
+        let models = state.render();
         color += 0.000123;
         if color > 1.0 {
             color = 0.0
         }
         gl.draw_frame(
             [color, color, color, 1.0],
-            model
+            models
         );
         window_context.swap_buffers().unwrap();
         match event {

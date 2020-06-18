@@ -1,7 +1,7 @@
 mod model;
 pub use model::Model;
 use glutin::{self, PossiblyCurrent};
-use nalgebra::{Vector3,Matrix4};
+use nalgebra::{Matrix4};
 use std::ffi::CString;
 
 use std::ffi::CStr;
