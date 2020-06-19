@@ -2,20 +2,20 @@ use gl_renderer::{init, run, Model, Renderable};
 use nalgebra::Vector3;
 #[macro_use]
 extern crate ecs;
-mod Planets{
+mod planets{
     use gl_renderer::Model;
     use nalgebra::Vector3;
     create_entity!(mass:f64,position:Vector3<f64>,velocity:Vector3<f64>,draw:Model); 
 }
 struct State {
-    planet_system:Planets::EntityManager,
+    planet_system:planets::EntityManager,
 }
 impl State{
     pub fn new()->Self{
         let mut s = State{
-            planet_system:Planets::EntityManager::new(),
+            planet_system:planets::EntityManager::new(),
         };
-        s.planet_system.new_entity(Planets::Entity::new(||{1.0},||{Vector3::new(0.0,0.0,0.0)},||{Vector3::new(0.0,0.0,0.0)},||Model{verticies:vec![],indicies:vec![]},vec![]));
+        s.planet_system.new_entity(planets::Entity::new(||{Some(1.0)},||{Some(Vector3::new(0.0,0.0,0.0))},||{Some(Vector3::new(0.0,0.0,0.0))},||None,vec![]));
         return s;
 
     }
